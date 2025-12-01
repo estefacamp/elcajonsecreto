@@ -1,135 +1,110 @@
+// lib/auth-context.tsx
 'use client'
 
 import {
   createContext,
   useContext,
   useState,
-  useCallback,
   useEffect,
-  type ReactNode,
+  useCallback,
 } from 'react'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
 interface User {
   id: string
-  email: string
   name: string
-  role?: string
+  email: string
 }
 
 interface AuthContextType {
   user: User | null
   loading: boolean
-  token: string | null
   login: (email: string, password: string) => Promise<void>
-  signup: (email: string, password: string, name: string) => Promise<void>
+  signup: (name: string, email: string, password: string) => Promise<void> // 👈 IMPORTANTE
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// 🧩 URL del backend (la misma que ya usabas)
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true) // 👈 empieza en true
+  const [loading, setLoading] = useState(true)
 
-  // 🔁 Al cargar la app, ver si ya hay sesión guardada
+  // Cargar usuario desde localStorage al iniciar
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const savedToken = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
-
-    if (savedToken && savedUser) {
-      try {
-        setToken(savedToken)
-        setUser(JSON.parse(savedUser))
-      } catch (e) {
-        console.error('Error parseando user de localStorage', e)
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-      }
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
     }
-
     setLoading(false)
   }, [])
 
-  // 🔐 LOGIN
   const login = useCallback(async (email: string, password: string) => {
-    setLoading(true)
-    try {
-      const res = await fetch(`${API_URL}/api/auth/login`, {
+    const res = await fetch(`${API_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}))
+      throw new Error(error.message || 'Error al iniciar sesión')
+    }
+
+    const data = await res.json()
+    const loggedUser: User = {
+      id: data.user.id,
+      name: data.user.name,
+      email: data.user.email,
+    }
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(loggedUser))
+    }
+
+    setUser(loggedUser)
+  }, [])
+
+  const signup = useCallback(
+    async (name: string, email: string, password: string) => {
+      const res = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
       })
 
-      const data = await res.json()
-
       if (!res.ok) {
-        throw new Error(data.message || 'Credenciales inválidas')
+        const error = await res.json().catch(() => ({}))
+        throw new Error(error.message || 'Error al registrarse')
       }
 
-      // Backend devuelve: { message, token, user: { id, name, email, role } }
-      setToken(data.token)
-      setUser(data.user)
+      const data = await res.json()
+      const newUser: User = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+      }
 
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', data.token)
-        localStorage.setItem('user', JSON.stringify(data.user))
+        localStorage.setItem('user', JSON.stringify(newUser))
       }
-    } finally {
-      setLoading(false)
-    }
-  }, [])
 
-  // 🧾 REGISTER
-  const signup = useCallback(
-    async (email: string, password: string, name: string) => {
-      setLoading(true)
-      try {
-        const res = await fetch(`${API_URL}/api/auth/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name, email, password }),
-        })
-
-        const data = await res.json()
-
-        if (!res.ok) {
-          throw new Error(data.message || 'Error al registrar usuario')
-        }
-
-        // Si después del register también querés dejarla logueada:
-        setToken(data.token)
-        setUser(data.user)
-
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('token', data.token)
-          localStorage.setItem('user', JSON.stringify(data.user))
-        }
-      } finally {
-        setLoading(false)
-      }
+      setUser(newUser)
     },
     []
   )
 
-  // 🚪 LOGOUT
   const logout = useCallback(() => {
-    setUser(null)
-    setToken(null)
-
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
     }
+    setUser(null)
   }, [])
 
   return (
@@ -137,9 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
-        token,
         login,
-        signup,
+        signup, // 👈 QUE ESTÉ ACÁ
         logout,
       }}
     >
@@ -151,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) {
-    throw new Error('useAuth debe usarse dentro de AuthProvider')
+    throw new Error('useAuth debe usarse dentro de un AuthProvider')
   }
   return ctx
 }

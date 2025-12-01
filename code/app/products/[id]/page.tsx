@@ -1,64 +1,96 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { Heart, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react'
-import { mockProducts } from '@/lib/products'
 import { useCart } from '@/lib/cart-context'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
 import CartDrawer from '@/components/cart-drawer'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+
 export default function ProductDetail() {
   const params = useParams()
   const productId = params.id as string
-  const product = mockProducts.find(p => p.id === productId)
+
+  const { addItem } = useCart()
+
+  const [product, setProduct] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
   const [showCart, setShowCart] = useState(false)
   const [imageIndex, setImageIndex] = useState(0)
-  const { addItem } = useCart()
 
-  if (!product) {
+  // 👉 Traer producto desde backend
+  useEffect(() => {
+    async function loadProduct() {
+      try {
+        const res = await fetch(`${API_URL}/api/productos/${productId}`)
+        if (!res.ok) throw new Error("No se encontró el producto")
+
+        const data = await res.json()
+        setProduct(data)
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (productId) loadProduct()
+  }, [productId])
+
+  if (loading) {
+    return <p className="p-6">Cargando...</p>
+  }
+
+  if (error || !product) {
     return (
       <div className="min-h-screen bg-background">
         <Header onCartClick={() => setShowCart(true)} />
         <div className="flex items-center justify-center py-20">
-          <p className="text-foreground text-lg">Producto no encontrado</p>
+          <p className="text-foreground text-lg">{error || "Producto no encontrado"}</p>
         </div>
         <Footer />
       </div>
     )
   }
 
-  const images = [product.image, product.image, product.image]
+  const images = [
+    product.image,
+    product.image,
+    product.image,
+  ]
 
   const handleAddToCart = () => {
     addItem({
-      id: product.id,
+      id: product._id,
       name: product.name,
       price: product.price,
       quantity,
-      image: product.image
+      image: product.image,
     })
     setShowCart(true)
   }
 
-  const nextImage = () => {
-    setImageIndex((prev) => (prev + 1) % images.length)
-  }
-
-  const prevImage = () => {
-    setImageIndex((prev) => (prev - 1 + images.length) % images.length)
-  }
+  const nextImage = () => setImageIndex((prev) => (prev + 1) % images.length)
+  const prevImage = () => setImageIndex((prev) => (prev - 1 + images.length) % images.length)
 
   return (
     <div className="min-h-screen bg-background">
       <Header onCartClick={() => setShowCart(true)} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        {/* IMAGEN + MINI IMÁGENES */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+          
+          {/* Galería */}
           <div className="space-y-4">
             <div className="relative bg-secondary rounded-lg overflow-hidden h-96 md:h-[500px]">
               <Image
@@ -80,6 +112,7 @@ export default function ProductDetail() {
                 <ChevronRight className="w-6 h-6" />
               </button>
             </div>
+
             <div className="flex gap-2">
               {images.map((img, idx) => (
                 <button
@@ -103,53 +136,22 @@ export default function ProductDetail() {
             </div>
           </div>
 
+          {/* INFO */}
           <div className="space-y-6">
             <div>
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <p className="text-accent text-sm font-semibold mb-1">{product.category.toUpperCase()}</p>
-                  <h1 className="text-4xl font-bold text-foreground">{product.name}</h1>
-                </div>
-                <button
-                  onClick={() => setIsFavorite(!isFavorite)}
-                  className="p-3 bg-secondary rounded-full hover:bg-secondary/80 transition-all"
-                >
-                  <Heart
-                    className="w-6 h-6"
-                    fill={isFavorite ? 'currentColor' : 'none'}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-4 mt-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-accent">★ {product.rating}</span>
-                  <span className="text-foreground/70">({product.reviews} reseñas)</span>
-                </div>
-              </div>
+              <p className="text-accent text-sm font-semibold mb-1">{product.category?.toUpperCase()}</p>
+              <h1 className="text-4xl font-bold text-foreground">{product.name}</h1>
             </div>
 
             <div className="border-b border-secondary pb-6">
-              <p className="text-3xl font-bold text-primary">${product.price.toFixed(2)}</p>
-              <p className="text-sm text-foreground/70 mt-2">Envío gratis en pedidos mayores a $100</p>
+              <p className="text-3xl font-bold text-primary">${product.price}</p>
             </div>
 
-            <div className="space-y-4">
-              <p className="text-foreground/80 text-lg leading-relaxed">
-                {product.description}
-              </p>
+            <p className="text-foreground/80 text-lg leading-relaxed">
+              {product.description}
+            </p>
 
-              <div className="bg-secondary/30 rounded-lg p-4 space-y-2">
-                <p className="font-semibold text-foreground">Características principales:</p>
-                <ul className="text-foreground/70 space-y-1 text-sm">
-                  <li>✓ Diseño premium y elegante</li>
-                  <li>✓ Materiales de la más alta calidad</li>
-                  <li>✓ Garantía de 2 años</li>
-                  <li>✓ Envío discreto y confidencial</li>
-                </ul>
-              </div>
-            </div>
-
+            {/* Cantidad */}
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <span className="text-foreground font-semibold">Cantidad:</span>
@@ -177,36 +179,7 @@ export default function ProductDetail() {
                 <ShoppingCart className="w-5 h-5" />
                 Agregar al carrito
               </button>
-
-              <button className="w-full border-2 border-accent text-accent py-3 rounded-lg font-semibold hover:bg-accent/10 transition-colors">
-                Comprar ahora
-              </button>
             </div>
-
-            <div className="bg-secondary/20 rounded-lg p-4 text-sm text-foreground/70 space-y-2">
-              <p>🔒 Compra segura con cifrado SSL</p>
-              <p>📦 Embalaje discreto y confidencial</p>
-              <p>♻️ Devoluciones fáciles en 30 días</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-secondary pt-12">
-          <h2 className="text-3xl font-bold text-foreground mb-8">Reseñas de Clientes</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-secondary/30 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-accent font-semibold">★★★★★ 5.0</span>
-                  <span className="text-foreground/70 text-sm">Hace {i * 5} días</span>
-                </div>
-                <p className="font-semibold text-foreground mb-2">Cliente Verificado</p>
-                <p className="text-foreground/80">
-                  Producto de excelente calidad, muy satisfecho con la compra. Envío rápido y discreto. Lo recomiendo ampliamente.
-                </p>
-              </div>
-            ))}
           </div>
         </div>
       </main>

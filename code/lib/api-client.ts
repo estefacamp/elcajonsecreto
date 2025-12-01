@@ -1,29 +1,41 @@
 'use client'
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+
 export async function apiClient(
-  url: string,
+  endpoint: string,
   options: RequestInit = {}
 ) {
-  const token =
-    typeof window !== 'undefined'
-      ? localStorage.getItem('token')
-      : null
+  let token: string | null = null
 
-  const headers = {
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token')
+  }
+
+  const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   }
 
-  const res = await fetch(url, {
+  const res = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers,
+    cache: 'no-store',
   })
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}))
-    throw new Error(error.message || 'Error en la petición')
+  let data: any = null
+
+  try {
+    data = await res.json()
+  } catch {
+    // si la respuesta no es JSON, data se queda en null
   }
 
-  return res.json()
+  if (!res.ok) {
+    throw new Error(data?.message || 'Error en la petición')
+  }
+
+  return data
 }

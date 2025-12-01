@@ -17,7 +17,9 @@ import productsRoutes from "./routes/products.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import ordersRoutes from "./routes/orders.routes.js";
 import paymentsRoutes from "./routes/payments.routes.js";
+import uploadRoutes from "./routes/upload.routes.js";   // 👈 SOLO ACÁ
 import { errorHandler } from "./middlewares/error.middleware.js";
+import { swaggerDocs } from "./config/swagger.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -40,8 +42,7 @@ async function startServer() {
 
     // 👉 Usa body-parser (lo pide la consigna)
     app.use(bodyParser.json());
-
-    // app.use(express.json()); // opcional, body-parser ya parsea JSON
+    // app.use(express.json()); // opcional
 
     app.use(cookieParser());
 
@@ -54,9 +55,11 @@ async function startServer() {
     app.use("/api/auth", authRoutes);
     app.use("/api/productos", productsRoutes);
     app.use("/api/ordenes", ordersRoutes);
-
-    // 🔥 Ruta de pagos (Mercado Pago)
     app.use("/api/pagos", paymentsRoutes);
+    app.use("/api/upload", uploadRoutes);   // 👈 ACÁ VA LA DE CLOUDINARY
+
+    // 4.5) 👉 Swagger ANTES del 404
+    swaggerDocs(app); // 📘 http://localhost:4000/api/docs
 
     // 5) Middleware 404 (Rutas inexistentes)
     app.use((req, res, next) => {
