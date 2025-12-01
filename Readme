@@ -1,0 +1,122 @@
+# 💋 El Cajón Secreto — E-commerce Full Stack
+### Proyecto Final · Talento Tech 2025 · Desarrollo Full Stack
+
+## 📌 Introducción
+**El Cajón Secreto** es un e-commerce completo desarrollado como proyecto final del trayecto **Full Stack** del programa **Talento Tech 2025**.  
+Incluye un backend en **Node.js + Express + MongoDB** y un frontend en **Next.js 14**, conectados mediante una API propia.
+
+El objetivo es integrar todos los contenidos aprendidos: backend, frontend, autenticación, arquitectura, APIs, seguridad y flujo real de compra.
+
+---
+
+## ✨ Funcionalidades principales
+
+### 🖥️ Frontend (Next.js 14)
+- Catálogo dinámico consumido desde el backend.
+- Página de detalle con imágenes y reseñas.
+- Carrito global con **Context API**.
+- Registro e inicio de sesión con **JWT**.
+- Persistencia de usuario y carrito con **localStorage**.
+- Rutas protegidas (ejemplo: `/micuenta`).
+- Diseño responsive con **Tailwind CSS**.
+- Secciones: inicio, promociones, contacto.
+
+### ⚙️ Backend (Node.js + Express + MongoDB)
+- Registro de usuarios con contraseña encriptada (**bcrypt**).
+- Login con **JWT** válido por 7 días.
+- Middlewares de protección (`protect`, `adminOnly`).
+- CRUD completo de productos.
+- Documentación con **Swagger** en `/api/docs`.
+- Integración con **Mercado Pago**.
+- Arquitectura modular y escalable (MVC + services).
+
+---
+
+## 🛠️ Tecnologías utilizadas
+
+### Backend
+- Node.js  
+- Express  
+- MongoDB (Mongoose)  
+- JWT  
+- Bcrypt  
+- Swagger UI  
+- Mercado Pago SDK  
+
+### Frontend
+- Next.js 14  
+- React  
+- Tailwind CSS  
+- Context API  
+- Lucide Icons  
+- Vercel Analytics  
+
+---
+
+## 📁 Estructura del proyecto
+
+```
+/backend
+  /controllers
+  /middlewares
+  /models
+  /routes
+  /services
+  server.js
+
+/frontend
+  /app
+  /components
+  /lib
+  /public
+  package.json
+```
+
+---
+
+## 🚀 Instalación y ejecución
+
+### Backend
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## 🛂 Credenciales de administrador (testing)
+```
+Email: estefania.campisi@gmail.com
+Password: toto12345
+```
+
+---
+
+## 🚧 Estado del proyecto
+Este proyecto se encuentra **en desarrollo activo**.  
+La versión actual corresponde a un **MVP funcional** entregado para Talento Tech 2025, pero continuará recibiendo mejoras y funcionalidades adicionales.
+
+---
+
+## ✍️ Autora
+**Estefanía Julieta Campisi**  
+Full Stack Developer — Talento Tech 2025
+
+
+
+
+
+
+
+
+
+
+
